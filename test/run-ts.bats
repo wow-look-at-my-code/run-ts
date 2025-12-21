@@ -149,3 +149,39 @@ setup_shebang_path() {
     [ "$status" -eq 0 ]
     [ "$output" = "shebang calc: 4" ]
 }
+
+@test "shebang passes arguments to script" {
+    local bindir
+    bindir=$(setup_shebang_path)
+    chmod +x shebang-args.ts
+
+    run env PATH="$bindir:$PATH" ./shebang-args.ts hello world 123
+    rm -rf "$bindir"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "hello world 123" ]
+}
+
+@test "shebang handles quoted arguments" {
+    local bindir
+    bindir=$(setup_shebang_path)
+    chmod +x shebang-args.ts
+
+    run env PATH="$bindir:$PATH" ./shebang-args.ts "hello world" "with spaces"
+    rm -rf "$bindir"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "hello world with spaces" ]
+}
+
+@test "shebang handles empty arguments" {
+    local bindir
+    bindir=$(setup_shebang_path)
+    chmod +x shebang-args.ts
+
+    run env PATH="$bindir:$PATH" ./shebang-args.ts
+    rm -rf "$bindir"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "" ]
+}
