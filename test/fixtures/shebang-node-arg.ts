@@ -1,3 +1,3 @@
-#!/usr/bin/env -S run-ts -Nversion
+#!/usr/bin/env -S run-ts -Nno-warnings
 declare var process: { argv: string[] };
-console.log("this should not print");
+console.log("no warnings mode");

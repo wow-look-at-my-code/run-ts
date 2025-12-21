@@ -202,5 +202,11 @@ setup_shebang_path() {
     rm -rf "$bindir"
 
     [ "$status" -eq 0 ]
-    [[ "$output" == v* ]]
+    [ "$output" = "no warnings mode" ]
+}
+
+@test "multiple -N flags with script args" {
+    run $RUN_TS -Nno-warnings -Nno-deprecation args.ts foo bar
+    [ "$status" -eq 0 ]
+    [ "$output" = "foo bar" ]
 }
