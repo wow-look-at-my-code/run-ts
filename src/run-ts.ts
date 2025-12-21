@@ -17,9 +17,27 @@ function hashFile(filePath: string): string
 	return createHash("sha1").update(readFileSync(filePath)).digest("hex");
 }
 
+function findTsConfig(startDir: string): string | null
+{
+	let dir = startDir;
+	while (dir !== "/") {
+		const tsconfig = join(dir, "tsconfig.json");
+		if (existsSync(tsconfig)) {
+			return tsconfig;
+		}
+		dir = dirname(dir);
+	}
+	return null;
+}
+
 function compile(file: string, outDir: string): boolean
 {
-	const result = spawnSync("npx", ["tsc", file, "--outDir", outDir, "--skipLibCheck"], {
+	const args = ["tsc", file, "--outDir", outDir];
+	const tsconfig = findTsConfig(dirname(file));
+	if (tsconfig) {
+		args.push("--project", tsconfig);
+	}
+	const result = spawnSync("npx", args, {
 		stdio: ["inherit", "inherit", "inherit"],
 		cwd: cwd(),
 	});
