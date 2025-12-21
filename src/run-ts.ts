@@ -8,7 +8,7 @@ const CACHE_DIR = join(process.env.HOME ?? "/tmp", ".cache", "run-ts");
 
 function usage(): never
 {
-	console.error("Usage: run-ts <file.ts> [args...]");
+	console.error("Usage: run-ts [--node-arg=<arg>]... <file.ts> [args...]");
 	exit(1);
 }
 
@@ -26,9 +26,9 @@ function compile(file: string, outDir: string): boolean
 	return result.status === 0;
 }
 
-function run(jsFile: string, args: string[]): void
+function run(jsFile: string, nodeArgs: string[], scriptArgs: string[]): void
 {
-	const child = spawn("node", [jsFile, ...args], {
+	const child = spawn("node", [...nodeArgs, jsFile, ...scriptArgs], {
 		stdio: "inherit",
 		cwd: cwd(),
 	});
@@ -42,12 +42,21 @@ function run(jsFile: string, args: string[]): void
 function main(): void
 {
 	const args = argv.slice(2);
-	if (args.length < 0 || !args[0]) {
+
+	// Parse --node-arg flags
+	const nodeArgs: string[] = [];
+	let i = 0;
+	while (i < args.length && args[i].startsWith("--node-arg=")) {
+		nodeArgs.push(args[i].slice("--node-arg=".length));
+		i++;
+	}
+
+	if (i >= args.length || !args[i]) {
 		usage();
 	}
 
-	const file = resolve(args[0]);
-	const restArgs = args.slice(1);
+	const file = resolve(args[i]);
+	const restArgs = args.slice(i + 1);
 
 	if (!existsSync(file)) {
 		console.error(`File not found: ${file}`);
@@ -75,7 +84,7 @@ function main(): void
 		}
 	}
 
-	run(outFile, restArgs);
+	run(outFile, nodeArgs, restArgs);
 }
 
 main();
