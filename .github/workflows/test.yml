@@ -21,3 +21,6 @@ jobs:
 
       - name: Run tests
         run: just test
+
+      - uses: PazerOP/actions/tab-check-action@v1
+      - uses: PazerOP/actions/no-scripts-action@v1
