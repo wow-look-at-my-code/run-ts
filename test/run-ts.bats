@@ -186,21 +186,14 @@ setup_shebang_path() {
     [ "$output" = "" ]
 }
 
-@test "passes --node-arg to node" {
-    run $RUN_TS --node-arg=--version hello.ts
+@test "passes -N flag to node" {
+    run $RUN_TS -Nversion hello.ts
     [ "$status" -eq 0 ]
     # Should print node version instead of running the script
     [[ "$output" == v* ]]
 }
 
-@test "passes multiple --node-arg flags to node" {
-    run $RUN_TS --node-arg=-e --node-arg='console.log("injected")' hello.ts
-    [ "$status" -eq 0 ]
-    # -e with code runs that code and exits, ignoring the file
-    [ "$output" = "injected" ]
-}
-
-@test "shebang with --node-arg" {
+@test "shebang with -N flag" {
     local bindir
     bindir=$(setup_shebang_path)
     chmod +x shebang-node-arg.ts

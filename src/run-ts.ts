@@ -8,7 +8,7 @@ const CACHE_DIR = join(process.env.HOME ?? "/tmp", ".cache", "run-ts");
 
 function usage(): never
 {
-	console.error("Usage: run-ts [--node-arg=<arg>]... <file.ts> [args...]");
+	console.error("Usage: run-ts [-N<node-arg>]... <file.ts> [args...]");
 	exit(1);
 }
 
@@ -43,11 +43,11 @@ function main(): void
 {
 	const args = argv.slice(2);
 
-	// Parse --node-arg flags
+	// Parse -N<arg> flags (e.g., -Nversion becomes --version for node)
 	const nodeArgs: string[] = [];
 	let i = 0;
-	while (i < args.length && args[i].startsWith("--node-arg=")) {
-		nodeArgs.push(args[i].slice("--node-arg=".length));
+	while (i < args.length && args[i].startsWith("-N")) {
+		nodeArgs.push("--" + args[i].slice(2));
 		i++;
 	}
 
