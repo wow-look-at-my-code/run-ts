@@ -77,3 +77,75 @@ run_both() {
     [ "$status" -eq 0 ]
     [ "$output" = "shebang works" ]
 }
+
+@test "multi-file calculator with nested imports" {
+    run run_both calc/main.ts '2 + 3' '4 * 5' '2 ^ 10' '(1 + 2) * (3 + 4)'
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"2 + 3 = 5"* ]]
+    [[ "$output" == *"4 * 5 = 20"* ]]
+    [[ "$output" == *"2 ^ 10 = 1024"* ]]
+    [[ "$output" == *"(1 + 2) * (3 + 4) = 21"* ]]
+}
+
+# Helper for shebang tests from different directories
+setup_shebang_path() {
+    local bindir
+    bindir=$(mktemp -d)
+    ln -s "$BATS_TEST_DIRNAME/../dist/run-ts.js" "$bindir/run-ts"
+    chmod +x "$bindir/run-ts"
+    echo "$bindir"
+}
+
+@test "shebang works from script's directory" {
+    local bindir
+    bindir=$(setup_shebang_path)
+    chmod +x calc/shebang-calc.ts
+
+    cd calc
+    run env PATH="$bindir:$PATH" ./shebang-calc.ts
+    rm -rf "$bindir"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "shebang calc: 4" ]
+}
+
+@test "shebang works from parent directory" {
+    local bindir
+    bindir=$(setup_shebang_path)
+    chmod +x calc/shebang-calc.ts
+
+    # Run from fixtures dir (parent of calc)
+    run env PATH="$bindir:$PATH" ./calc/shebang-calc.ts
+    rm -rf "$bindir"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "shebang calc: 4" ]
+}
+
+@test "shebang works from repo root" {
+    local bindir
+    bindir=$(setup_shebang_path)
+    chmod +x calc/shebang-calc.ts
+
+    # Run from repo root
+    cd "$BATS_TEST_DIRNAME/.."
+    run env PATH="$bindir:$PATH" ./test/fixtures/calc/shebang-calc.ts
+    rm -rf "$bindir"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "shebang calc: 4" ]
+}
+
+@test "shebang works from unrelated directory" {
+    local bindir
+    bindir=$(setup_shebang_path)
+    chmod +x calc/shebang-calc.ts
+
+    # Run from /tmp
+    cd /tmp
+    run env PATH="$bindir:$PATH" "$BATS_TEST_DIRNAME/fixtures/calc/shebang-calc.ts"
+    rm -rf "$bindir"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "shebang calc: 4" ]
+}
