@@ -187,10 +187,15 @@ setup_shebang_path() {
 }
 
 @test "passes -N flag to node" {
-    run $RUN_TS -Nversion hello.ts
+    run $RUN_TS -Nno-warnings check-node-args.ts
     [ "$status" -eq 0 ]
-    # Should print node version instead of running the script
-    [[ "$output" == v* ]]
+    [ "$output" = "--no-warnings" ]
+}
+
+@test "multiple -N flags to node" {
+    run $RUN_TS -Nno-warnings -Nno-deprecation check-node-args.ts
+    [ "$status" -eq 0 ]
+    [ "$output" = "--no-warnings --no-deprecation" ]
 }
 
 @test "shebang with -N flag" {
@@ -202,11 +207,11 @@ setup_shebang_path() {
     rm -rf "$bindir"
 
     [ "$status" -eq 0 ]
-    [ "$output" = "no warnings mode" ]
+    [ "$output" = "--no-warnings" ]
 }
 
-@test "multiple -N flags with script args" {
-    run $RUN_TS -Nno-warnings -Nno-deprecation args.ts foo bar
+@test "-N flags with script args" {
+    run $RUN_TS -Nno-warnings args.ts foo bar
     [ "$status" -eq 0 ]
     [ "$output" = "foo bar" ]
 }
