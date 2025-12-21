@@ -1,0 +1,27 @@
+{
+  "name": "run-ts",
+  "version": "1.0.0",
+  "description": "TypeScript runner with full type checking via tsc",
+  "type": "module",
+  "bin": {
+    "run-ts": "./dist/run-ts.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "npm run build && bats test/"
+  },
+  "keywords": [
+    "typescript",
+    "runner",
+    "tsc"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.0.0"
+  }
+}
