@@ -1,3 +1,4 @@
+#!/usr/bin/env run-ts
 import { add, multiply } from "./lib/math.js";
 
 const sum = add(2, 3);

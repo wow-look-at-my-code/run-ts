@@ -1,3 +1,3 @@
 #!/usr/bin/env run-ts
-declare var process: { argv: string[] };
-console.log(process.argv.slice(2).join(" "));
+import { argv } from "node:process";
+console.log(argv.slice(2).join(" "));

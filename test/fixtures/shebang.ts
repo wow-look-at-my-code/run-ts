@@ -1,2 +1,3 @@
 #!/usr/bin/env run-ts
-console.log("shebang works");
+import { stdout } from "node:process";
+stdout.write("shebang works\n");
