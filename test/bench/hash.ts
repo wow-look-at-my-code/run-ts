@@ -4,35 +4,37 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 // FNV-1a 64-bit (our implementation)
-function fnv1a(data: Buffer): string {
-    let hash = 0xcbf29ce484222325n;
-    for (const byte of data) {
-        hash ^= BigInt(byte);
-        hash = BigInt.asUintN(64, hash * 0x100000001b3n);
-    }
-    return hash.toString(16);
+function fnv1a(data: Buffer): string
+{
+	let hash = 0xcbf29ce484222325n;
+	for (const byte of data) {
+		hash ^= BigInt(byte);
+		hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+	}
+	return hash.toString(16);
 }
 
 // Node crypto hashes
 const cryptoHash = (algo: string) => (data: Buffer): string =>
-    createHash(algo).update(data).digest("hex");
+	createHash(algo).update(data).digest("hex");
 
 const md5 = cryptoHash("md5");
 const sha1 = cryptoHash("sha1");
 const sha256 = cryptoHash("sha256");
 
 // Benchmark runner
-function bench(name: string, fn: (data: Buffer) => string, data: Buffer, iterations: number): void {
-    // Warmup
-    for (let i = 0; i < 100; i++) fn(data);
+function bench(name: string, fn: (data: Buffer) => string, data: Buffer, iterations: number): void
+{
+	// Warmup
+	for (let i = 0; i < 100; i++) fn(data);
 
-    const start = performance.now();
-    for (let i = 0; i < iterations; i++) fn(data);
-    const elapsed = performance.now() - start;
+	const start = performance.now();
+	for (let i = 0; i < iterations; i++) fn(data);
+	const elapsed = performance.now() - start;
 
-    const opsPerSec = (iterations / elapsed) * 1000;
-    const nsPerOp = (elapsed / iterations) * 1e6;
-    console.log(`${name.padEnd(12)} ${opsPerSec.toFixed(0).padStart(10)} ops/sec  ${nsPerOp.toFixed(0).padStart(8)} ns/op`);
+	const opsPerSec = (iterations / elapsed) * 1000;
+	const nsPerOp = (elapsed / iterations) * 1e6;
+	console.log(`${name.padEnd(12)} ${opsPerSec.toFixed(0).padStart(10)} ops/sec  ${nsPerOp.toFixed(0).padStart(8)} ns/op`);
 }
 
 // Test data
