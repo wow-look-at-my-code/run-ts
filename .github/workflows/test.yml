@@ -6,9 +6,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -22,5 +22,5 @@ jobs:
       - name: Run tests
         run: just test
 
-      - uses: PazerOP/actions/tab-check-action@e0d70c36c454a7d07de209d016a4b97bfbdeeb60 # v1
-      - uses: PazerOP/actions/no-scripts-action@e0d70c36c454a7d07de209d016a4b97bfbdeeb60 # v1
+      - uses: PazerOP/actions/tab-check-action@v1
+      - uses: PazerOP/actions/no-scripts-action@v1
