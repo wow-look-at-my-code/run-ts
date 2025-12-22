@@ -5,6 +5,11 @@ import { dirname, join, resolve } from "node:path";
 import { cwd, exit, stderr } from "node:process";
 import { Args, flag, option, parseArgs, positional } from "./args.js";
 
+interface TsConfig
+{
+	compilerOptions?: Record<string, unknown>;
+}
+
 const CACHE_DIR = join(process.env.HOME ?? "/tmp", ".cache", "run-ts");
 const ANSI_GRAY = "\x1b[90m";
 const ANSI_RESET = "\x1b[0m";
@@ -57,13 +62,37 @@ function findTsConfig(startDir: string): string | null
 	return null;
 }
 
+function readTsConfig(tsconfigPath: string): TsConfig
+{
+	const content = readFileSync(tsconfigPath, "utf-8");
+	return JSON.parse(content);
+}
+
 function compile(file: string, outDir: string): boolean
 {
 	const args = ["tsc", file, "--outDir", outDir];
-	const tsconfig = findTsConfig(dirname(file));
-	if (tsconfig) {
-		args.push("--project", tsconfig);
+
+	const tsconfigPath = findTsConfig(dirname(file));
+	if (tsconfigPath) {
+		const tsconfig = readTsConfig(tsconfigPath);
+		if (tsconfig.compilerOptions) {
+			for (const [key, value] of Object.entries(tsconfig.compilerOptions)) {
+				if (key === "outDir" || key === "rootDir") continue; // Skip, we set these ourselves
+				if (typeof value === "boolean") {
+					// Only pass true boolean flags, tsc defaults handle false values
+					if (value) {
+						args.push(`--${key}`);
+					}
+				} else {
+					args.push(`--${key}`, String(value));
+				}
+			}
+		}
+	} else {
+		// No tsconfig.json found, default to strict mode
+		args.push("--strict");
 	}
+
 	const result = spawnSync("npx", args, {
 		stdio: ["inherit", "inherit", "inherit"],
 		cwd: cwd(),
@@ -92,7 +121,15 @@ function main(): void
 		throw new Error(`File not found: ${file}`);
 	}
 
-	const hash = timed("hashing...", () => hashFile(file));
+	let hash = timed("hashing...", () => hashFile(file));
+
+	// Include tsconfig in cache key to invalidate cache when tsconfig changes
+	const tsconfigPath = findTsConfig(dirname(file));
+	if (tsconfigPath) {
+		const tsconfigHash = hashFile(tsconfigPath);
+		hash = `${hash}-${tsconfigHash}`;
+	}
+
 	const cacheKey = `${hash}-${dirname(file).replace(/\//g, "_")}`;
 	const outDir = join(CACHE_DIR, cacheKey);
 	const outFile = join(outDir, file.replace(/\.ts$/, ".js").split("/").pop()!);

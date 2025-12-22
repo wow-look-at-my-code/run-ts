@@ -33,6 +33,25 @@ run_both() {
 	return "$rts_status"
 }
 
+# Helper: run a TypeScript file in clean docker environment
+# Usage: run_clean script.ts [file1 file2 ...]
+# Uses docker compose with typescript pre-installed
+run_clean() {
+	local script="$1"
+	shift
+
+	local volume_args=()
+
+	# Bind mount the script and any additional files
+	for file in "$script" "$@"; do
+		local basename="${file##*/}"
+		volume_args+=("-v" "$BATS_TEST_DIRNAME/fixtures/$file:/work/$basename:ro")
+	done
+
+	local script_basename="${script##*/}"
+	docker compose -f "$BATS_TEST_DIRNAME/docker-compose.yml" run --rm "${volume_args[@]}" run-ts-test run-ts "/work/$script_basename"
+}
+
 @test "runs a simple typescript file" {
 	run run_both hello.ts
 	[ "$status" -eq 0 ]
@@ -148,4 +167,33 @@ run_both() {
 	run run-ts -Nno-warnings args.ts foo bar
 	[ "$status" -eq 0 ]
 	[ "$output" = "foo bar" ]
+}
+
+@test "fails with implicit any when no tsconfig.json (tsc default is strict)" {
+	run run_clean implicit-any-no-config.ts
+	[ "$status" -ne 0 ]
+}
+
+@test "respects tsconfig.json with strict:false" {
+	cd tsconfig-test
+	run ./implicit-any.ts
+	[ "$status" -eq 0 ]
+	[ "$output" = "Hello world" ]
+}
+
+@test "respects tsconfig.json with strict:true" {
+	cd tsconfig-strict
+	run ./implicit-any.ts
+	[ "$status" -ne 0 ]
+}
+
+@test "clean: respects tsconfig.json with strict:false" {
+	run run_clean tsconfig-test/implicit-any.ts tsconfig-test/tsconfig.json
+	[ "$status" -eq 0 ]
+	[ "$output" = "Hello world" ]
+}
+
+@test "clean: respects tsconfig.json with strict:true" {
+	run run_clean tsconfig-strict/implicit-any.ts tsconfig-strict/tsconfig.json
+	[ "$status" -ne 0 ]
 }

@@ -4,7 +4,7 @@
   "description": "TypeScript runner with full type checking via tsc",
   "type": "module",
   "bin": {
-    "run-ts": "./dist/run-ts.js"
+    "run-ts": "./dist/run-ts"
   },
   "keywords": [
     "typescript",
