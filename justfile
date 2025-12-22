@@ -5,7 +5,7 @@ default:
 test:
     rm -rf dist
     npx tsx build.ts
-    bats test/
+    bats --print-output-on-failure test/
 
 alias build := test
 
