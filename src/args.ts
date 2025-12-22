@@ -29,7 +29,7 @@ class RegisteredFlag implements RegisteredArgBase<boolean>
 		public long: string,
 		public short: string | undefined,
 		public description: string,
-	) {}
+	) { }
 
 	match(input: string): boolean | null
 	{
@@ -49,7 +49,7 @@ class RegisteredOption<T = string> implements RegisteredArgBase<T>
 		public short: string | undefined,
 		public description: string,
 		public transform?: (value: string) => T,
-	) {}
+	) { }
 
 	match(input: string): T | null
 	{
@@ -72,7 +72,7 @@ class RegisteredPositional implements RegisteredArgBase<string>
 		public short: string | undefined,
 		public description: string,
 		public required?: boolean,
-	) {}
+	) { }
 
 	match(input: string): string
 	{
@@ -104,21 +104,23 @@ export abstract class Args
 	remainingArgs: string[] = [];
 }
 
-// Parse name: "--long-name" or "--pre[X]fix" where [X] is short option
-const beforePattern = "([a-z-]*)";
-const shortPattern = "(\\[([a-zA-Z0-9])\\])?";
-const afterPattern = "([a-z-]+)";
 
 function parseName(name: DashName): { long: string; short?: string; }
 {
-	const match = name.match(new RegExp(`^--${beforePattern}${shortPattern}?${afterPattern}$`));
-	if (!match)
+	// Parse name: "--long-name" or "--pre[X]fix" where [X] is short option
+	const openBracket = name.indexOf("[");
+
+	if (openBracket === -1)
+		return { long: name };
+
+	const closeBracket = name.indexOf("]", openBracket);
+	if (closeBracket !== openBracket + 2)
 		throw new Error(`Invalid option name: ${name}`);
 
-	const before = match[1];
-	const short = match[3];
-	const after = match[4];
-	const long = (before + (short?.toLowerCase() ?? "") + after).toLowerCase();
+	const before = name.slice(2, openBracket);
+	const short = name.slice(openBracket + 1, closeBracket);
+	const after = name.slice(closeBracket + 1);
+	const long = before + short.toLowerCase() + after;
 
 	return { long, short };
 }
