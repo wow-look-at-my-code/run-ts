@@ -11,4 +11,4 @@ alias build := test
 
 update:
 	npx npm-check-updates -u
-	npm install --package-lock-only
+	npm install
