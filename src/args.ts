@@ -10,6 +10,8 @@ interface PositionalMeta
 	required?: boolean;
 }
 
+type DashName = `--${string}`;
+
 interface RegisteredArgBase<T>
 {
 	property: string;
@@ -102,20 +104,26 @@ export abstract class Args
 	remainingArgs: string[] = [];
 }
 
-// Parse name format: "--long-name" or "--long-n[A]me" where [A] is short opt
-function parseName(name: string): { long: string; short?: string; }
+// Parse name: "--long-name" or "--pre[X]fix" where [X] is short option
+const beforePattern = "([a-z-]*)";
+const shortPattern = "(\\[([a-zA-Z0-9])\\])?";
+const afterPattern = "([a-z-]+)";
+
+function parseName(name: DashName): { long: string; short?: string; }
 {
-	const match = name.match(/^--(.+)\[(.)\](.*)$/);
-	if (match) {
-		const long = (match[1] + match[2].toLowerCase() + match[3]);
-		return { long, short: match[2] };
-	}
-	if (!name.startsWith("--"))
+	const match = name.match(new RegExp(`^--${beforePattern}${shortPattern}?${afterPattern}$`));
+	if (!match)
 		throw new Error(`Invalid option name: ${name}`);
-	return { long: name.slice(2) };
+
+	const before = match[1];
+	const short = match[3];
+	const after = match[4];
+	const long = (before + (short?.toLowerCase() ?? "") + after).toLowerCase();
+
+	return { long, short };
 }
 
-export function flag(name: string, description: string): PropertyDecorator
+export function flag(name: DashName, description: string): PropertyDecorator
 {
 	return (target, property) =>
 	{
@@ -124,7 +132,7 @@ export function flag(name: string, description: string): PropertyDecorator
 	};
 }
 
-export function option<T = string>(name: string, description: string, meta?: OptionMeta<T>): PropertyDecorator
+export function option<T = string>(name: DashName, description: string, meta?: OptionMeta<T>): PropertyDecorator
 {
 	return (target, property) =>
 	{
@@ -137,8 +145,7 @@ export function positional(name: string, description: string, meta?: PositionalM
 {
 	return (target, property) =>
 	{
-		const { long, short } = parseName(name);
-		getRegistry(target.constructor).args.push(new RegisteredPositional(property as string, long, short, description, meta?.required));
+		getRegistry(target.constructor).args.push(new RegisteredPositional(property as string, name, undefined, description, meta?.required));
 	};
 }
 

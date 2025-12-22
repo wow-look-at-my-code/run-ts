@@ -10,7 +10,6 @@ run_both() {
 	local file="$1"
 	shift
 
-	chmod +x "$file"
 	run "./$file" "$@"
 	local rts_status=$status
 	local rts_output="$output"
@@ -53,27 +52,18 @@ run_both() {
 }
 
 @test "fails on type errors" {
-	run $RUN_TS type-error.ts
+	run run-ts type-error.ts
 	[ "$status" -ne 0 ]
 }
 
 @test "shows usage when no file given" {
-	run $RUN_TS
+	run run-ts
 	[ "$status" -eq 1 ]
 	[[ "$output" == *"Usage:"* ]]
 }
 
 @test "works as shebang interpreter" {
-	# Create temp bin dir with run-ts symlink
-	local bindir
-	bindir=$(mktemp -d)
-	ln -s "$BATS_TEST_DIRNAME/../dist/run-ts.js" "$bindir/run-ts"
-	chmod +x "$bindir/run-ts"
-	chmod +x shebang.ts
-
-	run env PATH="$bindir:$PATH" ./shebang.ts
-	rm -rf "$bindir"
-
+	run ./shebang.ts
 	[ "$status" -eq 0 ]
 	[ "$output" = "shebang works" ]
 }
@@ -87,131 +77,75 @@ run_both() {
 	[[ "$output" == *"(1 + 2) * (3 + 4) = 21"* ]]
 }
 
-# Helper for shebang tests from different directories
-setup_shebang_path() {
-	local bindir
-	bindir=$(mktemp -d)
-	ln -s "$BATS_TEST_DIRNAME/../dist/run-ts.js" "$bindir/run-ts"
-	chmod +x "$bindir/run-ts"
-	echo "$bindir"
-}
 
 @test "shebang works from script's directory" {
-	local bindir
-	bindir=$(setup_shebang_path)
-	chmod +x calc/shebang-calc.ts
-
 	cd calc
-	run env PATH="$bindir:$PATH" ./shebang-calc.ts
-	rm -rf "$bindir"
-
+	run ./shebang-calc.ts
 	[ "$status" -eq 0 ]
 	[ "$output" = "shebang calc: 4" ]
 }
 
 @test "shebang works from parent directory" {
-	local bindir
-	bindir=$(setup_shebang_path)
-	chmod +x calc/shebang-calc.ts
-
 	# Run from fixtures dir (parent of calc)
-	run env PATH="$bindir:$PATH" ./calc/shebang-calc.ts
-	rm -rf "$bindir"
-
+	run ./calc/shebang-calc.ts
 	[ "$status" -eq 0 ]
 	[ "$output" = "shebang calc: 4" ]
 }
 
 @test "shebang works from repo root" {
-	local bindir
-	bindir=$(setup_shebang_path)
-	chmod +x calc/shebang-calc.ts
-
 	# Run from repo root
 	cd "$BATS_TEST_DIRNAME/.."
-	run env PATH="$bindir:$PATH" ./test/fixtures/calc/shebang-calc.ts
-	rm -rf "$bindir"
-
+	run ./test/fixtures/calc/shebang-calc.ts
 	[ "$status" -eq 0 ]
 	[ "$output" = "shebang calc: 4" ]
 }
 
 @test "shebang works from unrelated directory" {
-	local bindir
-	bindir=$(setup_shebang_path)
-	chmod +x calc/shebang-calc.ts
-
 	# Run from /tmp
 	cd /tmp
-	run env PATH="$bindir:$PATH" "$BATS_TEST_DIRNAME/fixtures/calc/shebang-calc.ts"
-	rm -rf "$bindir"
-
+	run "$BATS_TEST_DIRNAME/fixtures/calc/shebang-calc.ts"
 	[ "$status" -eq 0 ]
 	[ "$output" = "shebang calc: 4" ]
 }
 
 @test "shebang passes arguments to script" {
-	local bindir
-	bindir=$(setup_shebang_path)
-	chmod +x shebang-args.ts
-
-	run env PATH="$bindir:$PATH" ./shebang-args.ts hello world 123
-	rm -rf "$bindir"
-
+	run ./shebang-args.ts hello world 123
 	[ "$status" -eq 0 ]
 	[ "$output" = "hello world 123" ]
 }
 
 @test "shebang handles quoted arguments" {
-	local bindir
-	bindir=$(setup_shebang_path)
-	chmod +x shebang-args.ts
-
-	run env PATH="$bindir:$PATH" ./shebang-args.ts "hello world" "with spaces"
-	rm -rf "$bindir"
-
+	run ./shebang-args.ts "hello world" "with spaces"
 	[ "$status" -eq 0 ]
 	[ "$output" = "hello world with spaces" ]
 }
 
 @test "shebang handles empty arguments" {
-	local bindir
-	bindir=$(setup_shebang_path)
-	chmod +x shebang-args.ts
-
-	run env PATH="$bindir:$PATH" ./shebang-args.ts
-	rm -rf "$bindir"
-
+	run ./shebang-args.ts
 	[ "$status" -eq 0 ]
 	[ "$output" = "" ]
 }
 
 @test "passes -N flag to node" {
-	run $RUN_TS -Nno-warnings check-node-args.ts
+	run run-ts -Nno-warnings check-node-args.ts
 	[ "$status" -eq 0 ]
 	[ "$output" = "--no-warnings" ]
 }
 
 @test "multiple -N flags to node" {
-	run $RUN_TS -Nno-warnings -Nno-deprecation check-node-args.ts
+	run run-ts -Nno-warnings -Nno-deprecation check-node-args.ts
 	[ "$status" -eq 0 ]
 	[ "$output" = "--no-warnings --no-deprecation" ]
 }
 
 @test "shebang with -N flag" {
-	local bindir
-	bindir=$(setup_shebang_path)
-	chmod +x shebang-node-arg.ts
-
-	run env PATH="$bindir:$PATH" ./shebang-node-arg.ts
-	rm -rf "$bindir"
-
+	run ./shebang-node-arg.ts
 	[ "$status" -eq 0 ]
 	[ "$output" = "--no-warnings" ]
 }
 
 @test "-N flags with script args" {
-	run $RUN_TS -Nno-warnings args.ts foo bar
+	run run-ts -Nno-warnings args.ts foo bar
 	[ "$status" -eq 0 ]
 	[ "$output" = "foo bar" ]
 }
