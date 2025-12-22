@@ -3,7 +3,7 @@ default:
     @just --list
 
 test:
-    tsx build.ts
+    npx tsx build.ts
     bats test/
 
 alias build := test

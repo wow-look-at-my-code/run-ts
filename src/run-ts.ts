@@ -2,14 +2,41 @@ import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { argv, cwd, exit } from "node:process";
+import { cwd, exit, stderr } from "node:process";
+import { Args, flag, option, parseArgs, positional } from "./args.js";
 
 const CACHE_DIR = join(process.env.HOME ?? "/tmp", ".cache", "run-ts");
+const ANSI_GRAY = "\x1b[90m";
+const ANSI_RESET = "\x1b[0m";
 
-function usage(): never
+class Config extends Args
 {
-	console.error("Usage: run-ts [-N<node-arg>]... <file.ts> [args...]");
-	exit(1);
+	@flag("--[S]tatus", "Show status output")
+	showStatus = false;
+
+	@option("--[N]ode-arg", "Pass argument to node (e.g., -Ninspect becomes --inspect)", { transform: (v) => "--" + v })
+	nodeArgs: string[] = [];
+
+	@positional("file.ts", "TypeScript file to run", { required: true })
+	file = "";
+}
+
+const config = parseArgs(new Config());
+
+function status(msg: string): void
+{
+	if (config.showStatus) {
+		stderr.write(`${ANSI_GRAY}${msg}${ANSI_RESET}\n`);
+	}
+}
+
+function timed<T>(label: string, fn: () => T): T
+{
+	const start = performance.now();
+	const result = fn();
+	const ms = (performance.now() - start).toFixed(0);
+	status(`${label} ${ms}ms`);
+	return result;
 }
 
 function hashFile(filePath: string): string
@@ -59,29 +86,13 @@ function run(jsFile: string, nodeArgs: string[], scriptArgs: string[]): void
 
 function main(): void
 {
-	const args = argv.slice(2);
-
-	// Parse -N<arg> flags (e.g., -Nversion becomes --version for node)
-	const nodeArgs: string[] = [];
-	let i = 0;
-	while (i < args.length && args[i].startsWith("-N")) {
-		nodeArgs.push("--" + args[i].slice(2));
-		i++;
-	}
-
-	if (i >= args.length || !args[i]) {
-		usage();
-	}
-
-	const file = resolve(args[i]);
-	const restArgs = args.slice(i + 1);
+	const file = resolve(config.file);
 
 	if (!existsSync(file)) {
-		console.error(`File not found: ${file}`);
-		exit(1);
+		throw new Error(`File not found: ${file}`);
 	}
 
-	const hash = hashFile(file);
+	const hash = timed("hashing...", () => hashFile(file));
 	const cacheKey = `${hash}-${dirname(file).replace(/\//g, "_")}`;
 	const outDir = join(CACHE_DIR, cacheKey);
 	const outFile = join(outDir, file.replace(/\.ts$/, ".js").split("/").pop()!);
@@ -96,13 +107,15 @@ function main(): void
 			symlinkSync(nodeModules, outNodeModules);
 		}
 
-		if (!compile(file, outDir)) {
+		const ok = timed("compiling...", () => compile(file, outDir));
+		if (!ok) {
 			rmSync(outDir, { recursive: true, force: true });
 			exit(1);
 		}
 	}
 
-	run(outFile, nodeArgs, restArgs);
+	status(`executing ${file} from ${outFile}`);
+	run(outFile, config.nodeArgs, config.remainingArgs);
 }
 
 main();
