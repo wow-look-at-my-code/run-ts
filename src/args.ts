@@ -111,7 +111,7 @@ function parseName(name: DashName): { long: string; short?: string; }
 	const openBracket = name.indexOf("[");
 
 	if (openBracket === -1)
-		return { long: name };
+		return { long: name.slice(2) };
 
 	const closeBracket = name.indexOf("]", openBracket);
 	if (closeBracket !== openBracket + 2)
