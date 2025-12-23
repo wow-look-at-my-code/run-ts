@@ -197,3 +197,29 @@ run_clean() {
 	run run_clean tsconfig-strict/implicit-any.ts tsconfig-strict/tsconfig.json
 	[ "$status" -ne 0 ]
 }
+
+@test "handles tsconfig.json with paths and baseUrl" {
+	cd tsconfig-paths
+	run ./simple.ts
+	[ "$status" -eq 0 ]
+	[ "$output" = "Hello, world!" ]
+}
+
+@test "clean: handles tsconfig.json with paths and baseUrl" {
+	run run_clean tsconfig-paths/simple.ts tsconfig-paths/tsconfig.json tsconfig-paths/src/helper.ts
+	[ "$status" -eq 0 ]
+	[ "$output" = "Hello, world!" ]
+}
+
+@test "handles files without .ts extension" {
+	chmod +x no-extension
+	run ./no-extension
+	[ "$status" -eq 0 ]
+	[ "$output" = "Script without .ts extension works!" ]
+}
+
+@test "clean: handles files without .ts extension" {
+	run run_clean no-extension
+	[ "$status" -eq 0 ]
+	[ "$output" = "Script without .ts extension works!" ]
+}

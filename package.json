@@ -1,5 +1,5 @@
 {
-	"name": "run-ts",
+	"name": "@wow-look-at-my-code/run-ts",
 	"version": "1.0.0",
 	"description": "TypeScript runner with full type checking via tsc",
 	"type": "module",
@@ -12,6 +12,9 @@
 		"tsc"
 	],
 	"license": "MIT",
+	"dependencies": {
+		"@wow-look-at-my-code/args": "^1.0.0"
+	},
 	"devDependencies": {
 		"@types/node": "^25.0.3",
 		"esbuild": "^0.27.2",
@@ -20,5 +23,8 @@
 	},
 	"peerDependencies": {
 		"typescript": ">=4.0.0"
+	},
+	"scripts": {
+		"build": "tsx build.ts"
 	}
 }

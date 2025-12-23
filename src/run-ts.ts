@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { cwd, exit, stderr } from "node:process";
-import { Args, flag, option, parseArgs, positional } from "./args.js";
+import { Args, flag, option, parseArgs, positional } from "@wow-look-at-my-code/args";
 
 interface TsConfig
 {
@@ -77,7 +77,8 @@ function compile(file: string, outDir: string): boolean
 		const tsconfig = readTsConfig(tsconfigPath);
 		if (tsconfig.compilerOptions) {
 			for (const [key, value] of Object.entries(tsconfig.compilerOptions)) {
-				if (key === "outDir" || key === "rootDir") continue; // Skip, we set these ourselves
+				// Skip options that tsc doesn't allow on command line or we set ourselves
+				if (key === "outDir" || key === "rootDir" || key === "paths" || key === "baseUrl") continue;
 				if (typeof value === "boolean") {
 					// Only pass true boolean flags, tsc defaults handle false values
 					if (value) {
@@ -89,8 +90,8 @@ function compile(file: string, outDir: string): boolean
 			}
 		}
 	} else {
-		// No tsconfig.json found, default to strict mode
-		args.push("--strict");
+		// No tsconfig.json found, default to strict mode with node types
+		args.push("--strict", "--types", "node");
 	}
 
 	const result = spawnSync("npx", args, {
@@ -132,7 +133,20 @@ function main(): void
 
 	const cacheKey = `${hash}-${dirname(file).replace(/\//g, "_")}`;
 	const outDir = join(CACHE_DIR, cacheKey);
-	const outFile = join(outDir, file.replace(/\.ts$/, ".js").split("/").pop()!);
+
+	// If file doesn't have .ts extension, create a symlink with .ts extension
+	let fileToCompile = file;
+	const hasTsExtension = file.endsWith(".ts");
+	if (!hasTsExtension) {
+		const tsSymlink = join(outDir, `${file.split("/").pop()}.ts`);
+		mkdirSync(outDir, { recursive: true });
+		if (!existsSync(tsSymlink)) {
+			symlinkSync(file, tsSymlink);
+		}
+		fileToCompile = tsSymlink;
+	}
+
+	const outFile = join(outDir, fileToCompile.replace(/\.ts$/, ".js").split("/").pop()!);
 
 	if (!existsSync(outFile)) {
 		mkdirSync(outDir, { recursive: true });
@@ -144,7 +158,7 @@ function main(): void
 			symlinkSync(nodeModules, outNodeModules);
 		}
 
-		const ok = timed("compiling...", () => compile(file, outDir));
+		const ok = timed("compiling...", () => compile(fileToCompile, outDir));
 		if (!ok) {
 			rmSync(outDir, { recursive: true, force: true });
 			exit(1);
