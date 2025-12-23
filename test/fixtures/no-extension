@@ -1,0 +1,2 @@
+#!/usr/bin/env run-ts
+console.log("Script without .ts extension works!");
